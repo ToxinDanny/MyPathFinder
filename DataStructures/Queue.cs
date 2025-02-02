@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -25,49 +26,9 @@ namespace MyPathFinder.DataStructures
         public Node<T>? Root { get; set; } = new Node<T>(root);
         public Node<T>? Last { get; set; } = new Node<T>(root);
 
-        public void AddLast(Node<T> toAdd)
-        {
-            AddTail(Last, toAdd);
-            Last = toAdd;
-        }
+        public int Length { get; set; } = 1;
 
-        private static void AddTail(Node<T>? addTo, Node<T> toAdd)
-        {
-            if (addTo == null)
-                return;
-
-            if (addTo.Child == null)
-            {
-                addTo.Child = toAdd;
-                toAdd.Parent = addTo;
-                return;
-            }
-
-            AddTail(addTo.Child, toAdd);
-        }
-
-        public void AddFirst(Node<T> toAdd)
-        {
-            AddHead(Root, toAdd);
-            Root = toAdd;
-        }
-
-        private static void AddHead(Node<T>? addTo, Node<T> toAdd)
-        {
-            if(addTo == null)
-                return;
-
-            if (addTo.Parent == null)
-            {
-                addTo.Parent = toAdd;
-                toAdd.Child = addTo;
-                return;
-            }
-
-            AddHead(addTo.Parent, toAdd);
-        }
-       
-        public Node<T>? this[T value] 
+        public Node<T>? this[T value]
         {
             get => Root is not null ? Search(value, Root) : null;
         }
@@ -80,14 +41,58 @@ namespace MyPathFinder.DataStructures
                     return default;
 
                 var traverse = Traverse(Root, index);
-                
-                if(traverse != null)
+
+                if (traverse != null)
                     return traverse.Value;
 
                 return default;
             }
         }
-        
+
+        public void AddLast(Node<T> toAdd)
+        {
+            AddTail(Root?.Child is null ? Root : Last, toAdd);
+            Last = toAdd;
+        }
+
+        private void AddTail(Node<T>? addTo, Node<T> toAdd)
+        {
+            if (addTo == null)
+                return;
+
+            if (addTo.Child == null)
+            {
+                addTo.Child = toAdd;
+                toAdd.Parent = addTo;
+                Length++;
+                return;
+            }
+
+            AddTail(addTo.Child, toAdd);
+        }
+
+        public void AddFirst(Node<T> toAdd)
+        {
+            AddHead(Root, toAdd);
+            Root = toAdd;
+        }
+
+        private void AddHead(Node<T>? addTo, Node<T> toAdd)
+        {
+            if(addTo == null)
+                return;
+
+            if (addTo.Parent == null)
+            {
+                addTo.Parent = toAdd;
+                toAdd.Child = addTo;
+                Length++;
+                return;
+            }
+
+            AddHead(addTo.Parent, toAdd);
+        }
+                
         private static Node<T>? Search(T value, Node<T> start)
         {
             if (start is null || start.Value is null)
@@ -113,31 +118,7 @@ namespace MyPathFinder.DataStructures
             if (start.Child is null)
                 return null;
 
-            return Traverse(start.Child, index--);
-        }
-
-        public int Length
-        {
-            get
-            {
-                if (Root is null) return 0;
-
-                int counter = 0;
-
-                Count(Root, ref counter);
-
-                return counter;
-            }
-        }
-
-        private static int Count(Node<T> start, ref int counter)
-        {
-            if (start.Child is null)
-                return counter;
-
-            counter++;
-
-            return Count(start.Child, ref counter);
+            return Traverse(start.Child, --index);
         }
     }
 
@@ -151,7 +132,6 @@ namespace MyPathFinder.DataStructures
             if (_values == null)
             {
                 _values = new(item);
-                _length = 1;
                 return;
             }
 
@@ -167,16 +147,22 @@ namespace MyPathFinder.DataStructures
 
             _values.Root = _values.Root?.Child ?? null;
             
+            if(_values.Root != null)
+            {
+                _values.Root.Parent = null;
+                _values.Length--;
+            }
+            else
+            {
+                _values.Last = null;
+                _values = null;
+            }
+
             return first is not null ? first.Value : default;
         }
 
         public T? this[int index] => _values is not null ? _values[index] : default;
 
-        private int _length;
-        public int Length
-        {
-            get => _length;
-            set => _length = _values is not null ? _values.Length : value;
-        }
+        public int Length => _values?.Length ?? 0;
     }
 }
