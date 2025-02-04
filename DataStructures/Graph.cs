@@ -17,10 +17,10 @@
 
         public Vertex? DepthFirstSearch(Vertex current, HashTable<Vertex> visited, string toSearch) 
         {
-            visited[current.Value] = current;
-
             if(current.Value.Equals(toSearch))
                 return current;
+
+            visited[current.Value] = current;
 
             foreach (var v in current.AdjacentVertices)
             {
@@ -38,22 +38,25 @@
             return null;
         }
 
-        public Vertex? BreadthFirstSearch(Vertex current, Queue<Vertex> visited, string toSearch)
+        public Vertex? BreadthFirstSearch(Vertex current, HashTable<Vertex> visited, Queue<Vertex> adjacent, string toSearch)
         {
             if(current.Value.Equals(toSearch))
                 return current;
+
+            visited[current.Value] = current;
 
             foreach(var v in current.AdjacentVertices)
             {
                 if (v.Value.Equals(toSearch))
                     return v;
 
-                visited.Enqueue(v);
+                if (visited[v.Value] is null && adjacent[v] is null)
+                    adjacent.Enqueue(v);
             }
 
-            while (visited.Length != 0)
+            while (adjacent.Length != 0)
             {
-                var found = BreadthFirstSearch(visited.Dequeue()!, visited, toSearch);
+                var found = BreadthFirstSearch(adjacent.Dequeue()!, visited, adjacent, toSearch);
 
                 if(found is not null)
                     return found;

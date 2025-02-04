@@ -163,6 +163,8 @@ namespace MyPathFinder.DataStructures
 
         public T? this[int index] => _values is not null ? _values[index] : default;
 
+        public Node<T>? this[T value] => _values is not null ? _values[value] : default;
+
         public int Length => _values?.Length ?? 0;
     }
 }
