@@ -1,8 +1,9 @@
 ﻿namespace MyPathFinder.DataStructures
 {
-    public class Vertex(string value, List<Vertex>? adjacentVeretices = null) : IEquatable<Vertex>
+    public class Vertex(string value, decimal weight, List<Vertex>? adjacentVeretices = null) : IEquatable<Vertex>
     {
         public string Value { get; set; } = value;
+        public decimal Weight { get; set; } = weight;
         public List<Vertex> AdjacentVertices { get; set; } = adjacentVeretices is null ? [] : adjacentVeretices;
 
         public bool Equals(Vertex? other)
