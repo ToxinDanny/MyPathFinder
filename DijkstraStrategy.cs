@@ -1,25 +1,13 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using MyPathFinder.DataStructures;
+﻿using MyPathFinder.DataStructures;
 
 namespace MyPathFinder
 {
-	/*
-		Implementazione dell'algoritmo di Dijkstra per la ricerca della minima distanza.
-		Passaggi:
-		1) Visitiamo il primo nodo rendendolo il nodo corrente
-		2) Controlliamo i pesi dei nodi adiacenti
-		3) Aggiorniamo le tabelle di appoggio con gli eventuali nuovi valori minimi:
-			3.1) tabella dei pesi minimi
-			3.2) tabella dei nodi visitati con peso minimo
-		4) Spostiamoci sul nodo con peso minimo e rendiamolo corrente.
-		5) Ripeti 2-4 per tutti i nodi
-	*/
-
     public class DijkstraStrategy
     {
-		private Dictionary<string, bool> _visited = new();
-		private Dictionary<string, decimal> _minWeights = new();
-		private Dictionary<string, string> _minWeightsVisited = new();
+		private Dictionary<string, decimal> _minWeights = [];
+		private Dictionary<string, string> _minWeightsVisited = [];
+		private Dictionary<string, bool> _visited = [];
+		private List<Vertex> _unvisited = [];
 
 		private Graph? _graph;
 
@@ -30,6 +18,7 @@ namespace MyPathFinder
 			{
 				_graph = value;
 				_minWeights[_graph.Root.Value] = 0m;
+				_unvisited.Add(_graph.Root);
 			} 
 		}
 
@@ -41,32 +30,51 @@ namespace MyPathFinder
 			return this;
 		}
 
+        /*
+            Implementazione dell'algoritmo di Dijkstra per la ricerca della minima distanza.
+            Passaggi:
+            1) Visitiamo il primo nodo rendendolo il nodo corrente
+            2) Controlliamo i pesi dei nodi adiacenti
+            3) Aggiorniamo le tabelle di appoggio con gli eventuali nuovi valori minimi:
+                3.1) tabella dei pesi minimi
+                3.2) tabella dei nodi visitati con peso minimo
+            4) Spostiamoci sul nodo con peso minimo e rendiamolo corrente.
+            5) Ripeti 2-4 per tutti i nodi
+        */
         private void FindShortestPath(Vertex current)
         {
-			_visited[current.Value] = true;
+			_visited.Add(current.Value, true);
+			_unvisited.Remove(current);
+			_unvisited.AddRange(current.AdjacentVertices);
 
-			if(Destination.Equals(current.Value))
-				return;	
+			if (current.Value.Equals(Destination))
+				return;
 
-			foreach (var v in current.AdjacentVertices)
+			foreach(var v in current.AdjacentVertices)
 			{
-				if (_visited.TryGetValue(v.Value, out var _))
-					continue;
+				if(v.Value.Equals(Destination))
+                {
+                    _minWeights[current.Value] = v.Weight;
+                    _minWeightsVisited[current.Value] = v.Value;
+					return;
+                }
 
-				if (!_minWeights.TryGetValue(current.Value, out var weight) || 
+				if(!_minWeights.TryGetValue(current.Value, out var weight) || 
 					weight == 0 ||
 					weight > v.Weight)
 				{
-                    _minWeights[current.Value] = v.Weight;
+					_minWeights[current.Value] = v.Weight;
 					_minWeightsVisited[current.Value] = v.Value;
 				}
 			}
+			
+			var next = _minWeightsVisited.TryGetValue(current.Value, out var node) ?
+				_graph!.DepthFirstSearch(current, new HashTable<Vertex>(), node) :
+				null;
 
-			var minWeightNode = _graph!.DepthFirstSearch(current, new HashTable<Vertex>(), _minWeightsVisited[current.Value])!;
-
-			FindShortestPath(minWeightNode);
+			FindShortestPath(next ?? _unvisited[0]);
         }
-
+		
 		public string[] BacktrackShortestPath()
 		{
 			return BacktrackShortestPath([Destination], Destination);
