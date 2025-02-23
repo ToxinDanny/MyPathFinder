@@ -7,7 +7,6 @@ namespace MyPathFinder
 		private Dictionary<string, decimal> _minWeights = [];
 		private Dictionary<string, string> _minWeightsVisited = [];
 		private Dictionary<string, bool> _visited = [];
-		private List<Vertex> _unvisited = [];
 
 		private Graph? _graph;
 
@@ -18,7 +17,6 @@ namespace MyPathFinder
 			{
 				_graph = value;
 				_minWeights[_graph.Root.Value] = 0m;
-				_unvisited.Add(_graph.Root);
 			} 
 		}
 
@@ -43,36 +41,37 @@ namespace MyPathFinder
         */
         private void FindShortestPath(Vertex current)
         {
-			_visited.Add(current.Value, true);
-			_unvisited.Remove(current);
-			_unvisited.AddRange(current.AdjacentVertices);
-
-			if (current.Value.Equals(Destination))
+			if(!_visited.TryAdd(current.Value, true)) 
 				return;
 
-			foreach(var v in current.AdjacentVertices)
+            if(current.AdjacentVertices.Count == 0)
+				return;
+
+			foreach(Vertex v in current.AdjacentVertices)
 			{
-				if(v.Value.Equals(Destination))
-                {
-                    _minWeights[current.Value] = v.Weight;
-                    _minWeightsVisited[current.Value] = v.Value;
-					return;
-                }
-
-				if(!_minWeights.TryGetValue(current.Value, out var weight) || 
-					weight == 0 ||
-					weight > v.Weight)
+				if (!_minWeights.TryGetValue(v.Value, out var weight) || weight > v.Weight)
 				{
-					_minWeights[current.Value] = v.Weight;
-					_minWeightsVisited[current.Value] = v.Value;
+					_minWeights[v.Value] = _minWeights.TryGetValue(current.Value, out var totalWeight) ?
+                        totalWeight + v.Weight :
+						v.Weight;
+					_minWeightsVisited[v.Value] = current.Value;
 				}
-			}
-			
-			var next = _minWeightsVisited.TryGetValue(current.Value, out var node) ?
-				_graph!.DepthFirstSearch(current, new HashTable<Vertex>(), node) :
-				null;
 
-			FindShortestPath(next ?? _unvisited[0]);
+				var adjacentVisited = _minWeightsVisited.Where(w => w.Value.Equals(current.Value))
+					.Select(w => w.Key)
+					.Where(k => !_minWeightsVisited.ContainsValue(k));
+
+				if (!adjacentVisited.Any())
+					return;
+
+				var toSearch = _minWeights.Where(w => adjacentVisited.Contains(w.Key)).MinBy(w => w.Value).Key;
+				var next = _graph!.DepthFirstSearch(current, new(), toSearch);
+			
+				if (next is null)
+					return;
+
+				FindShortestPath(next);
+			}
         }
 		
 		public string[] BacktrackShortestPath()
@@ -85,7 +84,7 @@ namespace MyPathFinder
 			if(current.Equals(_graph!.Root.Value))
 				return path.Reverse().ToArray();
 
-			var previous = _minWeightsVisited.First(kv => kv.Value.Equals(current)).Key;
+			var previous = _minWeightsVisited[current];
 			path = [.. path, previous];
 
 			return BacktrackShortestPath(path, previous);
